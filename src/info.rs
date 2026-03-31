@@ -1,5 +1,37 @@
 use std::fs;
 
+#[derive(Debug)]
+ pub struct SystemInfo {
+    os: String,
+    kernel: String,
+    uptime: String,
+    cpu: String,
+    memory: String,
+    shell: String,
+    desktop_environment: String,
+}
+impl SystemInfo {
+   pub fn new() -> SystemInfo {
+        SystemInfo {
+            os: read_os(),
+            kernel: read_kernel(),
+            uptime: read_uptime(),
+            cpu: read_cpu(),
+            memory: read_memory(),
+            shell: read_shell(),
+            desktop_environment: read_desktop_environment(),
+        }
+    }
+    pub fn display(&self) {
+        println!("OS: {}", self.os);
+        println!("Kernel: {}", self.kernel);
+        println!("Uptime: {}", self.uptime);
+        println!("CPU: {}", self.cpu);
+        println!("Memory: {}", self.memory);
+        println!("Shell: {}", self.shell);
+        println!("Desktop Environment: {}", self.desktop_environment);
+    }
+}
 // Returns the pretty name of the OS
 pub fn read_os() -> String {
     let contents = fs::read_to_string("/etc/os-release").unwrap_or_else(|_| "Unknown".to_string());
