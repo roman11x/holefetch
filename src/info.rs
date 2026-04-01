@@ -1,4 +1,5 @@
 use std::fs;
+use sysinfo::Disks;
 
 #[derive(Debug)]
  pub struct SystemInfo {
@@ -9,6 +10,7 @@ use std::fs;
     memory: String,
     shell: String,
     desktop_environment: String,
+    disk: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -20,6 +22,7 @@ impl SystemInfo {
             memory: read_memory(),
             shell: read_shell(),
             desktop_environment: read_desktop_environment(),
+            disk: read_disk(),
         }
     }
     pub fn display(&self) {
@@ -30,6 +33,7 @@ impl SystemInfo {
         println!("Memory: {}", self.memory);
         println!("Shell: {}", self.shell);
         println!("Desktop Environment: {}", self.desktop_environment);
+        println!("Disk: {}", self.disk);
     }
 }
 // Returns the pretty name of the OS
@@ -96,8 +100,37 @@ pub fn read_shell() -> String {
       std::env::var("SHELL").unwrap_or_else(|_| "Unknown".to_string())
         .split("/").last().unwrap_or(&"Unknown").to_string()
 }
-// Returns the desktop environment used
+// Returns the desktop environment used and the display server
 pub fn read_desktop_environment() -> String {
-      std::env::var("DESKTOP_SESSION").unwrap_or_else(|_| "Unknown".to_string())
+    // This project focuses on traditional desktop environments,
+    // so the only possible display servers are Wayland and X11
+
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP")
+        .unwrap_or_else(|_|std::env::var("DESKTOP_SESSION") //if it's not set, check for DESKTOP_SESSION
+            .unwrap_or_else(|_| "Unknown".to_string()));
+
+    let display = std::env::var("WAYLAND_DISPLAY")
+        .map(|_| "Wayland").unwrap_or_else(|_| "X11"); //if it's not set, it's X11
+
+    format!("{} ({})", desktop, display)
+}
+// Returns the disk usage of the root partition
+pub fn read_disk() -> String {
+    //get the list of disks
+    let binding = Disks::new_with_refreshed_list();
+    //find the root partition in the disks list
+      binding.into_iter()
+        .find(|disk| disk.mount_point() == std::path::Path::new("/"))
+        .map(|disk|{ //if the root partition is found, calculate the disk usage and return it formatted
+            let total = disk.total_space() as f64 / 1024.0 / 1024.0 / 1024.0;
+
+            let available = disk.available_space() as f64 / 1024.0 / 1024.0 / 1024.0;
+
+            let used = total - available;
+
+            let file_system = disk.file_system().to_string_lossy();
+            format!("{:.2} GiB / {:.2} GiB ({}%) - {}", used, total, (used / total * 100.0) as u64, file_system)
+
+    }).unwrap_or_else(||"Unknown".to_string()) //if the root partition is not found, return "Unknown"
 
 }
