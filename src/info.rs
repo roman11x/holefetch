@@ -11,6 +11,7 @@ use sysinfo::Disks;
     shell: String,
     desktop_environment: String,
     disk: String,
+    gpu: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -23,6 +24,7 @@ impl SystemInfo {
             shell: read_shell(),
             desktop_environment: read_desktop_environment(),
             disk: read_disk(),
+            gpu: read_gpu(),
         }
     }
     pub fn display(&self) {
@@ -34,6 +36,7 @@ impl SystemInfo {
         println!("Shell: {}", self.shell);
         println!("Desktop Environment: {}", self.desktop_environment);
         println!("Disk: {}", self.disk);
+        println!("GPU: {}", self.gpu);
     }
 }
 // Returns the pretty name of the OS
@@ -132,5 +135,52 @@ pub fn read_disk() -> String {
             format!("{:.2} GiB / {:.2} GiB ({}%) - {}", used, total, (used / total * 100.0) as u64, file_system)
 
     }).unwrap_or_else(||"Unknown".to_string()) //if the root partition is not found, return "Unknown"
+
+}
+// returns the GPU model and whether it's integrated or discrete
+pub fn read_gpu() -> String{
+    let mut result: Vec<String> = Vec::new();
+
+    let output = std::process::Command::new("lspci") //get the list of PCI devices
+        .output().map_err(|_| "Unknown".to_string()).unwrap();
+
+    let stdout = String::from_utf8_lossy(&output.stdout); //convert the output to a string
+
+    // helper closure to format the GPU name according to the vendor
+    let clean_gpu_name = |name: &str| -> String {
+        match name {
+            n if n.contains("NVIDIA Corporation") => n.replace("NVIDIA Corporation", "NVIDIA").to_string(),
+            n if n.contains("Advanced Micro Devices, Inc. [AMD/ATI]") => n.replace("Advanced Micro Devices, Inc. [AMD/ATI]", "AMD").to_string(),
+            n if n.contains("Intel Corporation") => n.replace("Intel Corporation", "Intel").to_string(),
+            _ => "Unknown".to_string()
+        }
+    };
+    // helper closure to determine if the GPU is integrated or discrete
+    let integrated_or_discrete = |name : &str| -> &str {
+        match name {
+            n if n.contains("VGA compatible controller") => "[Integrated]",
+            n if n.contains("Discrete Graphics Controller") => "[Discrete]",
+            _ => ""
+        }
+    };
+
+    for line in  stdout.lines().filter(|line| line.contains("VGA") || line.contains("3D controller")) { //find the line containing "VGA" or "3D controller"
+            let tag = integrated_or_discrete(line);
+
+           if let Option::Some((_, model_info)) = line.split_once(": ") { //skip the 0x:00.0 header using the space, ignore the left side
+
+              let raw_name =  if let Option::Some((clean_name, _)) = model_info.split_once(" (rev") { //remove the revision number if it exists, ignore the right side
+                   clean_name.trim()
+               }
+               else {
+                   model_info.trim()
+               };
+               let vendor_cleaned = clean_gpu_name(raw_name);
+               result.push(format!("{} {}", vendor_cleaned, tag));
+
+           }
+    }
+
+    result.join("| ")
 
 }
