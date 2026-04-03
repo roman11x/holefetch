@@ -198,14 +198,18 @@ pub fn read_terminal() -> String {
     };
 
     let capitalize_first_letter = |s: &str| -> String {
-        s.chars().next().unwrap().to_uppercase().collect::<String>() + &s[1..]
+        let mut c = s.chars();
+        match c.next() {
+            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+            None => "".to_string()
+        }
     };
 
     let shell_pid = pid_finder("self").unwrap_or_else(|| "Unknown".to_string());
-    eprintln!("Shell PID: {}", shell_pid);
+
 
     let terminal_pid = pid_finder(&shell_pid).unwrap_or_else(|| "Unknown".to_string());
-    eprintln!("Terminal PID: {}", terminal_pid);
+
 
     // We check for 0 as well because it's not a user space program.
     if terminal_pid == "Unknown" || terminal_pid == "0" {
@@ -214,5 +218,19 @@ pub fn read_terminal() -> String {
 
     let comm_path = format!("/proc/{}/comm", terminal_pid);
 
-   capitalize_first_letter(fs::read_to_string(comm_path).unwrap_or_else(|_| "Unknown".to_string()).trim())
+    let comm = fs::read_to_string(comm_path).unwrap_or_else(|_| "Unknown".to_string());
+
+    let trimmed_comm = comm.trim();
+    // Some terminals have -agent or -gui in their name
+    let final_comm = match trimmed_comm.split_once("-agent") {
+        Some((name, _)) => name,
+        None => {
+            match trimmed_comm.split_once("-gui") {
+                Some((name, _)) => name,
+                _ => trimmed_comm
+            }
+        }
+    };
+
+   capitalize_first_letter(final_comm)
 }
