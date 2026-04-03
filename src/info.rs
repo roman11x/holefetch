@@ -12,6 +12,7 @@ use sysinfo::Disks;
     desktop_environment: String,
     disk: String,
     gpu: String,
+    terminal: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -25,6 +26,7 @@ impl SystemInfo {
             desktop_environment: read_desktop_environment(),
             disk: read_disk(),
             gpu: read_gpu(),
+            terminal: read_terminal(),
         }
     }
     pub fn display(&self) {
@@ -37,6 +39,7 @@ impl SystemInfo {
         println!("Desktop Environment: {}", self.desktop_environment);
         println!("Disk: {}", self.disk);
         println!("GPU: {}", self.gpu);
+        println!("Terminal: {}", self.terminal);
     }
 }
 // Returns the pretty name of the OS
@@ -183,4 +186,33 @@ pub fn read_gpu() -> String{
 
     result.join("| ")
 
+}
+// Returns the name of the terminal used
+pub fn read_terminal() -> String {
+    // helper closure to find the PIDs of the shell and terminal
+    let pid_finder = |path: &str| -> Option<String> {
+        let path = format!("/proc/{}/status", path);
+        fs::read_to_string(path).ok()?
+            .lines().find(|line| line.starts_with("PPid:"))?
+            .split_once(":")?.1.trim().to_string().into()
+    };
+
+    let capitalize_first_letter = |s: &str| -> String {
+        s.chars().next().unwrap().to_uppercase().collect::<String>() + &s[1..]
+    };
+
+    let shell_pid = pid_finder("self").unwrap_or_else(|| "Unknown".to_string());
+    eprintln!("Shell PID: {}", shell_pid);
+
+    let terminal_pid = pid_finder(&shell_pid).unwrap_or_else(|| "Unknown".to_string());
+    eprintln!("Terminal PID: {}", terminal_pid);
+
+    // We check for 0 as well because it's not a user space program.
+    if terminal_pid == "Unknown" || terminal_pid == "0" {
+        return "Unknown".to_string();
+    }
+
+    let comm_path = format!("/proc/{}/comm", terminal_pid);
+
+   capitalize_first_letter(fs::read_to_string(comm_path).unwrap_or_else(|_| "Unknown".to_string()).trim())
 }
