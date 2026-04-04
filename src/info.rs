@@ -20,6 +20,7 @@ use sysinfo::Disks;
     host: String,
     swap: String,
     battery: String,
+    ip: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -39,6 +40,7 @@ impl SystemInfo {
             host: read_host(),
             swap: read_swap(),
             battery: read_battery(),
+            ip: read_ip()
         }
     }
     pub fn display(&self) {
@@ -57,6 +59,7 @@ impl SystemInfo {
         println!("Battery {}", self.battery);
         println!("Locale: {}", self.locale);
         println!("Packages: {}", self.packages);
+        println!("Local IP {}", self.ip);
     }
 }
 // Returns the pretty name of the OS
@@ -363,4 +366,22 @@ pub fn read_battery() -> String {
         return "No battery".to_string();
     }
     result.join(", ")
+}
+// returns the user's ip and network interface
+pub fn read_ip() -> String {
+    let mut ip = "offline".to_string();
+    let mut network_interface = "none".to_string();
+
+    if let Ok(output) = Command::new("ip").args(["route", "get", "1"]).output(){ //get the IP address of the default route
+        let stdout = String::from_utf8_lossy(&output.stdout); //convert the output to a string
+
+        for line in stdout.lines() {
+                if let Some((interface, ip_address)) = line.split_once(" src ") {
+                    ip = ip_address.split_whitespace().next().unwrap_or("offline").to_string();
+                    network_interface = interface.split_whitespace().last().unwrap_or("none").to_string();
+                    break;
+                }
+        }
+    }
+    format!("({}): {}", network_interface, ip)
 }
