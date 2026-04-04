@@ -19,6 +19,7 @@ use sysinfo::Disks;
     packages: String,
     host: String,
     swap: String,
+    battery: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -37,6 +38,7 @@ impl SystemInfo {
             packages: read_packages(),
             host: read_host(),
             swap: read_swap(),
+            battery: read_battery(),
         }
     }
     pub fn display(&self) {
@@ -52,6 +54,7 @@ impl SystemInfo {
         println!("Disk: {}", self.disk);
         println!("GPU: {}", self.gpu);
         println!("Terminal: {}", self.terminal);
+        println!("Battery {}", self.battery);
         println!("Locale: {}", self.locale);
         println!("Packages: {}", self.packages);
     }
@@ -338,4 +341,26 @@ pub fn read_swap() -> String {
     let percentage = (used / total * 100.0) as u64;
     format!("{:.2} GiB / {:.2} GiB ({}%)", used, total, percentage)
 }
-
+// Returns the model name and the percentage of battery charge as well as the status of the battery
+pub fn read_battery() -> String {
+    let mut result = Vec::new();
+    if let Ok(entries) = fs::read_dir("/sys/class/power_supply") {
+        for entry in entries.flatten() { // get the list of power supplies, skip failed entries
+            let base = entry.path();
+            let type_path = base.join("type");
+            if fs::read_to_string(type_path).unwrap_or_default().contains("Battery") { // if the entry is a battery, get the model name, capacity and status
+                let model_path = base.join("model_name");
+                let capacity_path = base.join("capacity");
+                let status_path = base.join("status");
+                let model_name = fs::read_to_string(model_path).unwrap_or_else(|_| "Unknown".to_string());
+                let capacity = fs::read_to_string(capacity_path).unwrap_or_else(|_| "Unknown".to_string()).trim().parse::<u64>().unwrap_or(0);
+                let status = fs::read_to_string(status_path).unwrap_or_else(|_| "Unknown".to_string()).trim().to_string();
+                result.push(format!("({}): {}% [{}]", model_name.trim(), capacity, status.trim()));
+            }
+        }
+    }
+    if result.is_empty() {
+        return "No battery".to_string();
+    }
+    result.join(", ")
+}
