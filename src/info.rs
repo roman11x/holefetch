@@ -385,3 +385,35 @@ pub fn read_ip() -> String {
     }
     format!("({}): {}", network_interface, ip)
 }
+// helper function to get the value of a gsettings key
+fn get_gsettings(schema: &str, key: &str) -> String {
+    let mut result = String::new();
+    if let Ok(output) = Command::new("gsettings").args(["get", schema, key]).output() {
+        result = String::from_utf8_lossy(&output.stdout).trim().
+            trim_matches(|c| c == '\'' || c == '\"').to_string();
+    }
+    else {
+        return "Unknown".to_string();
+    }
+
+    if result.is_empty() {
+        return "None".to_string();
+    }
+    result
+}
+// helper function to get the value of a xfconf key (for XFCE)
+fn xfconf_query_get(channel: &str, property: &str) -> String {
+    let mut result = String::new();
+    if let Ok(output) = Command::new("xfconf-query").args(["-c", channel, "-p", property]).output() {
+        result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    }
+    else {
+        return "Unknown".to_string();
+    }
+
+    if result.is_empty() {
+        return "None".to_string();
+    }
+
+result
+}
