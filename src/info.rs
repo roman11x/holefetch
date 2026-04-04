@@ -1,4 +1,6 @@
 use std::fs;
+use std::io::BufRead;
+use std::process::Command;
 use sysinfo::Disks;
 
 #[derive(Debug)]
@@ -13,6 +15,8 @@ use sysinfo::Disks;
     disk: String,
     gpu: String,
     terminal: String,
+    locale: String,
+    packages: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -27,6 +31,8 @@ impl SystemInfo {
             disk: read_disk(),
             gpu: read_gpu(),
             terminal: read_terminal(),
+            locale: read_locale(),
+            packages: read_packages(),
         }
     }
     pub fn display(&self) {
@@ -40,6 +46,8 @@ impl SystemInfo {
         println!("Disk: {}", self.disk);
         println!("GPU: {}", self.gpu);
         println!("Terminal: {}", self.terminal);
+        println!("Locale: {}", self.locale);
+        println!("Packages: {}", self.packages);
     }
 }
 // Returns the pretty name of the OS
@@ -233,4 +241,67 @@ pub fn read_terminal() -> String {
     };
 
    capitalize_first_letter(final_comm)
+}
+// Returns the locale of the system
+pub fn read_locale() -> String {
+    std::env::var("LANG").unwrap_or_else(|_| "Unknown".to_string())
+}
+// Returns the number of installed packages (both native and non-native) as well as the package manager used
+pub fn read_packages() -> String {
+    // commands to get the number of packages using the native package manager
+    let commands = vec![("pacman", "-Qq"), ("dpkg", "--get-selections"), ("rpm", "-qa")];
+
+    // variables to store the number of packages and the package manager used
+    let mut package_manager = "";
+    let mut flatpak_user_packages = 0;
+    let mut flatpak_system_packages = 0;
+    let mut snap_packages = 0;
+
+    // helper closure to count the number of native packages depending on the package manager used
+    let mut native_packages = || -> u64 {
+        for (command, arg) in &commands {
+            if let Ok(output) = Command::new(command).arg(arg).output() {
+                package_manager = command;
+                return output.stdout.lines().count() as u64;
+            }
+            else {
+                continue;
+            }
+        }
+        0
+    };
+
+    let native_packages_count = native_packages();
+
+    if let Ok(output) = Command::new("flatpak").arg("list").arg("--system").output() {
+        flatpak_system_packages = output.stdout.lines().count() as u64;
+    }
+    if let Ok(output) = Command::new("flatpak").arg("list").arg("--user").output() {
+        flatpak_user_packages = output.stdout.lines().count() as u64;
+    }
+    if let Ok(output) = Command::new("snap").arg("list").output() {
+        let count = output.stdout.lines().count() as u64;
+        snap_packages = if count > 0 {
+            count - 1
+        }
+        else {
+            0
+        };
+    }
+
+    let mut result = Vec::new();
+    if native_packages_count > 0 {
+        result.push(format!("{} ({})", native_packages_count, package_manager));
+    }
+    if flatpak_system_packages > 0 {
+        result.push(format!("{} ({})", flatpak_system_packages, "flatpak-system"));
+    }
+    if flatpak_user_packages > 0 {
+        result.push(format!("{} ({})", flatpak_user_packages, "flatpak-user"));
+    }
+    if snap_packages > 0 {
+        result.push(format!("{} ({})", snap_packages, "snap"));
+    }
+    result.join(", ")
+
 }
