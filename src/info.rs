@@ -17,6 +17,8 @@ use sysinfo::Disks;
     terminal: String,
     locale: String,
     packages: String,
+    host: String,
+    swap: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -33,14 +35,18 @@ impl SystemInfo {
             terminal: read_terminal(),
             locale: read_locale(),
             packages: read_packages(),
+            host: read_host(),
+            swap: read_swap(),
         }
     }
     pub fn display(&self) {
         println!("OS: {}", self.os);
+        println!("Host: {}", self.host);
         println!("Kernel: {}", self.kernel);
         println!("Uptime: {}", self.uptime);
         println!("CPU: {}", self.cpu);
         println!("Memory: {}", self.memory);
+        println!("Swap: {}", self.swap);
         println!("Shell: {}", self.shell);
         println!("Desktop Environment: {}", self.desktop_environment);
         println!("Disk: {}", self.disk);
@@ -305,3 +311,31 @@ pub fn read_packages() -> String {
     result.join(", ")
 
 }
+// Returns the product name and product family of the host
+pub fn read_host() -> String {
+    let product_name = fs::read_to_string("/sys/class/dmi/id/product_name")
+        .unwrap_or_else(|_| "Unknown".to_string());
+    let product_family = fs::read_to_string("/sys/class/dmi/id/product_family")
+        .unwrap_or_else(|_| "Unknown".to_string());
+    format!("{} ({})", product_name.trim(), product_family.trim())
+}
+// Returns the total and used swap space as well as the percentage of used swap space
+pub fn read_swap() -> String {
+    let mem = fs::read_to_string("/proc/meminfo")
+        .unwrap_or_else(|_| "Unknown".to_string());
+    // helper closure to parse the memory info
+    let parse_label = |label: &str| -> f64 {
+        let value = mem.lines().find(|line| line.starts_with(label))
+            .unwrap_or(&"Unknown").split_whitespace().nth(1).unwrap_or(&"Unknown").trim() //get the numeric value
+            .parse::<f64>().unwrap_or(0.0);
+        value
+    };
+    let total = parse_label("SwapTotal:") /1024.0 /1024.0;
+    if total == 0.0 {
+        return "Disabled".to_string();
+    }
+    let used = total - parse_label("SwapFree:") /1024.0 /1024.0;
+    let percentage = (used / total * 100.0) as u64;
+    format!("{:.2} GiB / {:.2} GiB ({}%)", used, total, percentage)
+}
+
