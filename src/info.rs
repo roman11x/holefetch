@@ -21,6 +21,8 @@ use sysinfo::Disks;
     swap: String,
     battery: String,
     ip: String,
+    window_manager: String,
+    theme: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -40,7 +42,9 @@ impl SystemInfo {
             host: read_host(),
             swap: read_swap(),
             battery: read_battery(),
-            ip: read_ip()
+            ip: read_ip(),
+            window_manager: read_wm(),
+            theme: read_theme(),
         }
     }
     pub fn display(&self) {
@@ -53,6 +57,8 @@ impl SystemInfo {
         println!("Swap: {}", self.swap);
         println!("Shell: {}", self.shell);
         println!("Desktop Environment: {}", self.desktop_environment);
+        println!("Window Manager: {}", self.window_manager);
+        println!("Theme: {}", self.theme);
         println!("Disk: {}", self.disk);
         println!("GPU: {}", self.gpu);
         println!("Terminal: {}", self.terminal);
@@ -417,3 +423,53 @@ fn xfconf_query_get(channel: &str, property: &str) -> String {
 
 result
 }
+// helper function to get the value of a kde config key (for KDE)
+fn kde_config_get(file: &str, section: &str,key: &str) -> String {
+    let mut result = String::new();
+    for cmd in &["kreadconfig5", "kreadconfig6"] {
+        if let Ok(output) = Command::new(cmd).args(["--file", file, "--group", section, "--key", key]).output() {
+            result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !result.is_empty() {
+                return result;
+            }
+        }
+    }
+    return "None".to_string();
+}
+// function to get the window manager and display server used
+fn read_wm() -> String {
+    let mut wm = "Unknown".to_string();
+    let mut display = "Unknown".to_string();
+
+    if let Some((desktop_env, display_server)) = read_desktop_environment().split_once(" ") {
+        display = display_server.trim_matches(|c| c == '(' || c == ')' || c == ' ' || c == '"' || c == '/' )
+            .to_string();
+        wm = match desktop_env {
+           "GNOME" => "Mutter".to_string(),
+            "KDE" => "KWin".to_string(),
+            "XFCE" => "Xfwm4".to_string(),
+            "MATE" => "Marco".to_string(),
+            "X-Cinnamon" => "Muffin".to_string(),
+            _ => "Unknown".to_string(),
+        };
+
+    }
+    format!("{} ({})", wm, display)
+}
+// function to get the theme of the DE
+fn read_theme() -> String {
+    let mut theme = "Unknown".to_string();
+    if let Ok(output) = std::env::var("XDG_CURRENT_DESKTOP") {
+       theme = match output.as_str() {
+            "GNOME" => get_gsettings("org.gnome.desktop.interface", "gtk-theme"),
+            "KDE" => kde_config_get("/etc/kde/share/config/kdeglobals", "General", "ThemeName"),
+            "XFCE" => xfconf_query_get("/xfce4/desktop", "/backdrop/screen0/monitor0/workspace0/last-image"),
+            "MATE" => get_gsettings("org.mate.desktop.interface", "theme"),
+            "X-Cinnamon" => get_gsettings("org.cinnamon.desktop.interface", "theme"),
+            _ => theme,
+        }
+    }
+    theme
+}
+
+
