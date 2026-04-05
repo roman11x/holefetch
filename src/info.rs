@@ -462,10 +462,10 @@ fn read_theme() -> String {
     if let Ok(output) = std::env::var("XDG_CURRENT_DESKTOP") {
        theme = match output.as_str() {
             "GNOME" => get_gsettings("org.gnome.desktop.interface", "gtk-theme"),
-            "KDE" => kde_config_get("/etc/kde/share/config/kdeglobals", "General", "ThemeName"),
-            "XFCE" => xfconf_query_get("/xfce4/desktop", "/backdrop/screen0/monitor0/workspace0/last-image"),
-            "MATE" => get_gsettings("org.mate.desktop.interface", "theme"),
-            "X-Cinnamon" => get_gsettings("org.cinnamon.desktop.interface", "theme"),
+            "KDE" => kde_config_get("kdeglobals", "General", "ColorScheme"),
+            "XFCE" => xfconf_query_get("xsettings", "/Net/ThemeName"),
+            "MATE" => get_gsettings("org.mate.interface", "gtk-theme"),
+            "X-Cinnamon" => get_gsettings("org.cinnamon.desktop.interface", "gtk-theme"),
             _ => theme,
         }
     }
