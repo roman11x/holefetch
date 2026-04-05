@@ -2,7 +2,9 @@ use std::fs;
 use std::io::BufRead;
 use std::process::Command;
 use sysinfo::Disks;
+use crate::desktop::DesktopEnvironment;
 
+// Group all the relevant fields of the system into a struct
 #[derive(Debug)]
  pub struct SystemInfo {
     os: String,
@@ -11,7 +13,7 @@ use sysinfo::Disks;
     cpu: String,
     memory: String,
     shell: String,
-    desktop_environment: String,
+    desktop_environment: DesktopEnvironment,
     disk: String,
     gpu: String,
     terminal: String,
@@ -21,8 +23,6 @@ use sysinfo::Disks;
     swap: String,
     battery: String,
     ip: String,
-    window_manager: String,
-    theme: String,
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
@@ -33,7 +33,7 @@ impl SystemInfo {
             cpu: read_cpu(),
             memory: read_memory(),
             shell: read_shell(),
-            desktop_environment: read_desktop_environment(),
+            desktop_environment: DesktopEnvironment::new(),
             disk: read_disk(),
             gpu: read_gpu(),
             terminal: read_terminal(),
@@ -43,8 +43,6 @@ impl SystemInfo {
             swap: read_swap(),
             battery: read_battery(),
             ip: read_ip(),
-            window_manager: read_wm(),
-            theme: read_theme(),
         }
     }
     pub fn display(&self) {
@@ -56,9 +54,7 @@ impl SystemInfo {
         println!("Memory: {}", self.memory);
         println!("Swap: {}", self.swap);
         println!("Shell: {}", self.shell);
-        println!("Desktop Environment: {}", self.desktop_environment);
-        println!("Window Manager: {}", self.window_manager);
-        println!("Theme: {}", self.theme);
+        self.desktop_environment.display();
         println!("Disk: {}", self.disk);
         println!("GPU: {}", self.gpu);
         println!("Terminal: {}", self.terminal);
@@ -68,6 +64,13 @@ impl SystemInfo {
         println!("Local IP {}", self.ip);
     }
 }
+
+
+
+
+
+
+
 // Returns the pretty name of the OS
 pub fn read_os() -> String {
     let contents = fs::read_to_string("/etc/os-release").unwrap_or_else(|_| "Unknown".to_string());
@@ -132,20 +135,9 @@ pub fn read_shell() -> String {
       std::env::var("SHELL").unwrap_or_else(|_| "Unknown".to_string())
         .split("/").last().unwrap_or(&"Unknown").to_string()
 }
-// Returns the desktop environment used and the display server
-pub fn read_desktop_environment() -> String {
-    // This project focuses on traditional desktop environments,
-    // so the only possible display servers are Wayland and X11
 
-    let desktop = std::env::var("XDG_CURRENT_DESKTOP")
-        .unwrap_or_else(|_|std::env::var("DESKTOP_SESSION") //if it's not set, check for DESKTOP_SESSION
-            .unwrap_or_else(|_| "Unknown".to_string()));
 
-    let display = std::env::var("WAYLAND_DISPLAY")
-        .map(|_| "Wayland").unwrap_or_else(|_| "X11"); //if it's not set, it's X11
 
-    format!("{} ({})", desktop, display)
-}
 // Returns the disk usage of the root partition
 pub fn read_disk() -> String {
     //get the list of disks
@@ -391,85 +383,8 @@ pub fn read_ip() -> String {
     }
     format!("({}): {}", network_interface, ip)
 }
-// helper function to get the value of a gsettings key
-fn get_gsettings(schema: &str, key: &str) -> String {
-    let mut result = String::new();
-    if let Ok(output) = Command::new("gsettings").args(["get", schema, key]).output() {
-        result = String::from_utf8_lossy(&output.stdout).trim().
-            trim_matches(|c| c == '\'' || c == '\"').to_string();
-    }
-    else {
-        return "Unknown".to_string();
-    }
 
-    if result.is_empty() {
-        return "None".to_string();
-    }
-    result
-}
-// helper function to get the value of a xfconf key (for XFCE)
-fn xfconf_query_get(channel: &str, property: &str) -> String {
-    let mut result = String::new();
-    if let Ok(output) = Command::new("xfconf-query").args(["-c", channel, "-p", property]).output() {
-        result = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    }
-    else {
-        return "Unknown".to_string();
-    }
 
-    if result.is_empty() {
-        return "None".to_string();
-    }
 
-result
-}
-// helper function to get the value of a kde config key (for KDE)
-fn kde_config_get(file: &str, section: &str,key: &str) -> String {
-    let mut result = String::new();
-    for cmd in &["kreadconfig5", "kreadconfig6"] {
-        if let Ok(output) = Command::new(cmd).args(["--file", file, "--group", section, "--key", key]).output() {
-            result = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !result.is_empty() {
-                return result;
-            }
-        }
-    }
-    return "None".to_string();
-}
-// function to get the window manager and display server used
-fn read_wm() -> String {
-    let mut wm = "Unknown".to_string();
-    let mut display = "Unknown".to_string();
-
-    if let Some((desktop_env, display_server)) = read_desktop_environment().split_once(" ") {
-        display = display_server.trim_matches(|c| c == '(' || c == ')' || c == ' ' || c == '"' || c == '/' )
-            .to_string();
-        wm = match desktop_env {
-           "GNOME" => "Mutter".to_string(),
-            "KDE" => "KWin".to_string(),
-            "XFCE" => "Xfwm4".to_string(),
-            "MATE" => "Marco".to_string(),
-            "X-Cinnamon" => "Muffin".to_string(),
-            _ => "Unknown".to_string(),
-        };
-
-    }
-    format!("{} ({})", wm, display)
-}
-// function to get the theme of the DE
-fn read_theme() -> String {
-    let mut theme = "Unknown".to_string();
-    if let Ok(output) = std::env::var("XDG_CURRENT_DESKTOP") {
-       theme = match output.as_str() {
-            "GNOME" => get_gsettings("org.gnome.desktop.interface", "gtk-theme"),
-            "KDE" => kde_config_get("kdeglobals", "General", "ColorScheme"),
-            "XFCE" => xfconf_query_get("xsettings", "/Net/ThemeName"),
-            "MATE" => get_gsettings("org.mate.interface", "gtk-theme"),
-            "X-Cinnamon" => get_gsettings("org.cinnamon.desktop.interface", "gtk-theme"),
-            _ => theme,
-        }
-    }
-    theme
-}
 
 
