@@ -2,7 +2,7 @@ use std::fs;
 use std::env;
 
 fn main () {
-    // step 1: fetch file list from GitHub API
+    // step 1: fetch the file list from GitHub API
     // step 2: for each .txt file, download content
     // step 3: build the logos.rs string
     // step 4: write to OUT_DIR
@@ -31,15 +31,36 @@ fn main () {
 
         let raw_logo = client.get(url).header("User-Agent", "holefetch-build").send().unwrap().text().unwrap(); // download the logo
 
-        let logo = raw_logo.replace("\r", ""); // remove carriage returns
+        let logo = raw_logo
+            .replace("\r", "") // remove carriage returns
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"");
 
         logo_names.push(logo_name.to_string()); // add the logo name to the list
 
-        match_arms.push_str(&format!("\"{}\" => Some(r#\"{}\"#),\n", logo_name, logo)); // add the logo to the match arm
+        match_arms.push_str(&format!("\"{}\" => Some(\"{}\"),\n", logo_name, logo)); // add the logo to the match arm
+
 
 
     }
+    let list_logos_entries = logo_names.iter().map(|name| format!("\"{}\"", name))
+        .collect::<Vec<_>>().join(", "); // join the logo names into a string with quotations for each name
+                                                // because otherwise the compiler will think that they are variables i.e. [arch, fedora] instead of ["arch", "fedora"]
+    let output = format!(
+        "pub fn get_logo(name: &str) -> Option<&'static str> {{
+          match name {{
+        {}
+        _ => None,
+          }}
+}}
+        pub fn list_logos() -> &'static [ &'static str ] {{
+          &[{}]
+}}
+        ", match_arms, list_logos_entries
+    );
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = format!("{}/logos.rs", out_dir);
+    fs::write(dest_path, output).unwrap();
 }
-//
-//let path = format!("src/logo/ascii/{}", name);
-//std::fs::write(path, response).unwrap();
+
+
