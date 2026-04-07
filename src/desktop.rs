@@ -9,6 +9,7 @@ pub struct DesktopEnvironment {
     pub theme: String,
     pub icon_theme: String,
     pub cursor_theme: String,
+    pub cursor_size: String,
     pub font: String,
     pub wm_theme: String,
 }
@@ -24,6 +25,7 @@ impl DesktopEnvironment {
                 theme: Self::get_gsettings("org.gnome.desktop.interface", "gtk-theme"),
                 icon_theme: Self::get_gsettings("org.gnome.desktop.interface", "icon-theme"),
                 cursor_theme: Self::get_gsettings("org.gnome.desktop.interface", "cursor-theme"),
+                cursor_size: Self::get_gsettings("org.gnome.desktop.interface", "cursor-size"),
                 font: Self::get_gsettings("org.gnome.desktop.interface", "font-name"),
                 wm_theme: Self::get_gsettings("org.gnome.desktop.wm.preferences", "theme"),
             },
@@ -34,6 +36,7 @@ impl DesktopEnvironment {
                 theme: Self::kde_config_get("kdeglobals", "General", "ColorScheme"),
                 icon_theme: Self::kde_config_get("kdeglobals", "Icons", "Theme"),
                 cursor_theme: Self::kde_config_get("kcminputrc", "Mouse", "cursorTheme"),
+                cursor_size: Self::kde_config_get("kcminputrc", "Mouse", "cursorSize"),
                 font: Self::kde_config_get("kdeglobals", "General", "font"),
                 wm_theme: Self::kde_config_get("kwinrc", "org.kde.kdecoration2", "theme"),
             },
@@ -44,6 +47,7 @@ impl DesktopEnvironment {
                 theme: Self::xfconf_query_get("xsettings", "/Net/ThemeName"),
                 icon_theme: Self::xfconf_query_get("xsettings", "/Net/IconThemeName"),
                 cursor_theme: Self::xfconf_query_get("xsettings", "/Gtk/CursorThemeName"),
+                cursor_size: Self::xfconf_query_get("xsettings", "/Gtk/CursorThemeSize"),
                 font: Self::xfconf_query_get("xsettings", "/Gtk/FontName"),
                 wm_theme: Self::xfconf_query_get("xfwm4", "/general/theme")
             },
@@ -54,6 +58,7 @@ impl DesktopEnvironment {
                 theme: Self::get_gsettings("org.cinnamon.desktop.interface", "gtk-theme"),
                 icon_theme: Self::get_gsettings("org.cinnamon.desktop.interface", "icon-theme"),
                 cursor_theme: Self::get_gsettings("org.cinnamon.desktop.interface", "cursor-theme"),
+                cursor_size: Self::get_gsettings("org.cinnamon.desktop.interface", "cursor-size"),
                 font: Self::get_gsettings("org.cinnamon.desktop.interface", "font-name"),
                 wm_theme: Self::get_gsettings("org.cinnamon.desktop.wm.preferences", "theme"),
             },
@@ -64,6 +69,7 @@ impl DesktopEnvironment {
                 theme: Self::get_gsettings("org.mate.interface", "gtk-theme"),
                 icon_theme: Self::get_gsettings("org.mate.interface", "icon-theme"),
                 cursor_theme: Self::get_gsettings("org.mate.peripherals-mouse", "cursor-theme"),
+                cursor_size: Self::get_gsettings("org.mate.peripherals-mouse", "cursor-size"),
                 font: Self::get_gsettings("org.mate.interface", "font-name"),
                 wm_theme: Self::get_gsettings("org.mate.marco.general", "theme"),
             },
@@ -74,6 +80,7 @@ impl DesktopEnvironment {
                 theme: "Unknown".to_string(),
                 icon_theme: "Unknown".to_string(),
                 cursor_theme: "Unknown".to_string(),
+                cursor_size: "Unknown".to_string(),
                 font: "Unknown".to_string(),
                 wm_theme: "Unknown".to_string(),
             }
@@ -87,7 +94,7 @@ impl DesktopEnvironment {
         println!("WM Theme: {}", self.wm_theme);
         println!("Theme: {}", self.theme);
         println!("Icons: {}", self.icon_theme);
-        println!("Cursor Theme: {}", self.cursor_theme);
+        println!("Cursor Theme: {} ({}px)", self.cursor_theme, self.cursor_size);
         println!("Font: {}", self.font);
     }
 
