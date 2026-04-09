@@ -125,7 +125,7 @@ impl DesktopEnvironment {
     }
 
     // helper function to get the value of a gsettings key
-    fn get_gsettings(schema: &str, key: &str) -> String {
+    pub fn get_gsettings(schema: &str, key: &str) -> String {
         let  result;
         if let Ok(output) = Command::new("gsettings").args(["get", schema, key]).output() {
             result = String::from_utf8_lossy(&output.stdout).trim().
@@ -141,7 +141,7 @@ impl DesktopEnvironment {
         result
     }
     // helper function to get the value of a xfconf key (for XFCE)
-    fn xfconf_query_get(channel: &str, property: &str) -> String {
+   pub fn xfconf_query_get(channel: &str, property: &str) -> String {
         let result;
         if let Ok(output) = Command::new("xfconf-query").args(["-c", channel, "-p", property]).output() {
             result = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -157,7 +157,7 @@ impl DesktopEnvironment {
         result
     }
     // helper function to get the value of a kde config key (for KDE)
-    fn kde_config_get(file: &str, section: &str,key: &str) -> String {
+   pub fn kde_config_get(file: &str, section: &str,key: &str) -> String {
         let mut result;
         for cmd in &["kreadconfig6", "kreadconfig5"] {
             if let Ok(output) = Command::new(cmd).args(["--file", file, "--group", section, "--key", key]).output() {

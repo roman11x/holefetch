@@ -15,7 +15,7 @@ use crate::desktop::DesktopEnvironment;
     cpu: String,
     memory: String,
     shell: String,
-    desktop_environment: DesktopEnvironment,
+    pub desktop_environment: DesktopEnvironment,
     disk: String,
     gpu: String,
     terminal: String,

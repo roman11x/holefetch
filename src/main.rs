@@ -4,8 +4,12 @@ use crate::info::SystemInfo;
 mod info;
 mod desktop;
 
+mod colour;
+
 fn main() {
     let info = SystemInfo::new();
+    let wallpaper = colour::detect_wallpaper(&info.desktop_environment.name);
+    println!("{:?}", wallpaper);
     let id = SystemInfo::read_os_id();
     let info_lines = info.to_lines();
 
