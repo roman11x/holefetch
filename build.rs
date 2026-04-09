@@ -31,10 +31,12 @@ fn main () {
 
         let raw_logo = client.get(url).header("User-Agent", "holefetch-build").send().unwrap().text().unwrap(); // download the logo
 
-        let logo = raw_logo
+        let logo_escaped = raw_logo
             .replace("\r", "") // remove carriage returns
             .replace('\\', "\\\\")
             .replace('"', "\\\"");
+
+        let logo = logo_escaped.trim_start_matches('\n'); // remove the first line break
 
         logo_names.push(logo_name.to_string()); // add the logo name to the list
 

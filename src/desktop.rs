@@ -88,14 +88,17 @@ impl DesktopEnvironment {
 
 
     }
-    pub fn display(&self) {
-        println!("DE: {} ({})", self.name, self.display_server);
-        println!("WM: {} ({})", self.wm, self.display_server);
-        println!("WM Theme: {}", self.wm_theme);
-        println!("Theme: {}", self.theme);
-        println!("Icons: {}", self.icon_theme);
-        println!("Cursor Theme: {} ({}px)", self.cursor_theme, self.cursor_size);
-        println!("Font: {}", self.font);
+
+    pub fn to_lines(&self) -> Vec<String> {
+        vec![
+            format!("DE: {} ({})", self.name, self.display_server),
+            format!("WM: {} ({})", self.wm, self.display_server),
+            format!("WM Theme: {}", self.wm_theme),
+            format!("Theme: {}", self.theme),
+            format!("Icons: {}", self.icon_theme),
+            format!("Cursor Theme: {} ({}px)", self.cursor_theme, self.cursor_size),
+            format!("Font: {}", self.font),
+        ]
     }
 
     // Returns the desktop environment used and the display server

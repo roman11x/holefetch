@@ -49,25 +49,29 @@ impl SystemInfo {
             ip: Self::read_ip(),
         }
     }
-    pub fn display(&self) {
-        println!("{}@{}", self.user, self.hostname);
-        println!("-----------");
-        println!("OS: {}", self.os);
-        println!("Host: {}", self.host);
-        println!("Kernel: {}", self.kernel);
-        println!("Uptime: {}", self.uptime);
-        println!("CPU: {}", self.cpu);
-        println!("Memory: {}", self.memory);
-        println!("Swap: {}", self.swap);
-        println!("Shell: {}", self.shell);
-        self.desktop_environment.display();
-        println!("Disk: {}", self.disk);
-        println!("GPU: {}", self.gpu);
-        println!("Terminal: {}", self.terminal);
-        println!("Battery {}", self.battery);
-        println!("Locale: {}", self.locale);
-        println!("Packages: {}", self.packages);
-        println!("Local IP {}", self.ip);
+    
+
+    pub fn to_lines(&self) -> Vec<String> {
+        let mut lines = Vec::new();
+        lines.push(format!("{}@{}", self.user, self.hostname));
+        lines.push("-----------".to_string());
+        lines.push(format!("OS: {}", self.os));
+        lines.push(format!("Host: {}", self.host));
+        lines.push(format!("Kernel: {}", self.kernel));
+        lines.push(format!("Uptime: {}", self.uptime));
+        lines.push(format!("CPU: {}", self.cpu));
+        lines.push(format!("Memory: {}", self.memory));
+        lines.push(format!("Swap: {}", self.swap));
+        lines.push(format!("Shell: {}", self.shell));
+        lines.extend(self.desktop_environment.to_lines());
+        lines.push(format!("Disk: {}", self.disk));
+        lines.push(format!("GPU: {}", self.gpu));
+        lines.push(format!("Terminal: {}", self.terminal));
+        lines.push(format!("Battery {}", self.battery));
+        lines.push(format!("Locale: {}", self.locale));
+        lines.push(format!("Packages: {}", self.packages));
+        lines.push(format!("Local IP {}", self.ip));
+        lines
     }
 
     // Returns the pretty name of the OS
@@ -79,6 +83,14 @@ impl SystemInfo {
 
         os_name.trim_matches('"').to_string()
     }
+    // returns the ID of the OS
+    pub fn read_os_id() -> String {
+        let contents = fs::read_to_string("/etc/os-release").unwrap_or_else(|_| "Unknown".to_string());
+        let os_id = contents.lines().find(|line| line.starts_with("ID="))
+            .unwrap_or(&"Unknown").split("=").nth(1).unwrap_or(&"Unknown");
+        os_id.trim().to_string()
+    }
+
     // Returns the kernel version
     pub fn read_kernel() -> String {
         let kernel = fs::read_to_string("/proc/sys/kernel/osrelease")

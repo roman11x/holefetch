@@ -6,10 +6,36 @@ mod desktop;
 
 fn main() {
     let info = SystemInfo::new();
-    info.display();
-    if let Some(logo) = get_logo("fedora") {
-        println!("{}", logo);
+    let id = SystemInfo::read_os_id();
+    let info_lines = info.to_lines();
+
+    let logo = get_logo(&id).unwrap_or("unknown");
+    let logo_lines = logo.lines().collect::<Vec<&str>>();
+
+    // temporary closure to strip the placeholder from the logo
+    let strip_placeholders = |s: &str| -> String {
+        let mut result = s.to_string();
+        for i in 1..=9 {
+            result = result.replace(&format!("${}", i ), "")
+        }
+        result
+    };
+
+    let logo_width = logo_lines.iter().map(|line| strip_placeholders(line).chars().count()).max().unwrap_or(0); // find the width of the logo by finding the longest line
+
+    let max_lines = logo_lines.len().max(info_lines.len()); // find the greater of the two lengths for the width of the logo output
+    let empty = String::new();
+    for i in 0..max_lines {
+        let logo_line = logo_lines.get(i).unwrap_or(&"");
+        let info_line = info_lines.get(i).unwrap_or(&empty);
+
+        let stripped = strip_placeholders(logo_line);
+        let visible_len = strip_placeholders(logo_line);
+        let padding = " ".repeat(logo_width - stripped.chars().count());
+
+        println!("{}{}  {}", stripped, padding, info_line);
     }
+
 }
 
 
