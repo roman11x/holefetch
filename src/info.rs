@@ -70,7 +70,7 @@ impl SystemInfo {
         lines.push(format!("Battery {}", self.battery));
         lines.push(format!("Locale: {}", self.locale));
         lines.push(format!("Packages: {}", self.packages));
-        lines.push(format!("Local IP {}", self.ip));
+        lines.push(format!("Local IP: {}", self.ip));
         lines
     }
 

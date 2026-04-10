@@ -1,7 +1,6 @@
 use std::process::Command;
-use color_thief::ColorFormat;
 use crate::desktop::DesktopEnvironment;
-use image::GenericImageView;
+use image::ImageReader;
 
 
 // Detect the wallpaper path of the current desktop environment
@@ -68,10 +67,14 @@ pub fn detect_wallpaper(de: &str) -> Option<String> {
 }
 // Extract the palette of the dominant color of the wallpaper
 pub fn extract_palette(wallpaper: &str) -> Vec<color_thief::Color> {
-    if let Ok(wp) = image::open(wallpaper) {
-       let pixels = wp.to_rgb8().into_raw(); //convert the image to RGB8 raw pixels
-        if let Ok(result) = color_thief::get_palette(&pixels, color_thief::ColorFormat::Rgb, 5, 4) {
-            return result;
+    if let Ok(reader) = ImageReader::open(wallpaper) {
+        if let Ok(reader) = reader.with_guessed_format() {
+            if let Ok(wp) = reader.decode() {
+                let pixels = wp.to_rgb8().into_raw();
+                if let Ok(result) = color_thief::get_palette(&pixels, color_thief::ColorFormat::Rgb, 5, 4) {
+                    return result;
+                }
+            }
         }
     }
     vec![]
@@ -94,8 +97,8 @@ pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Co
 
             let luminance = 0.299 * r  + 0.587 * g  + 0.114 * b ; // The result is between 0 (black, no brightness) and 255 (white, full brightness).
 
-            if luminance < 60.0 && luminance > 0.0 {
-                let luminance_factor = 60.0 / luminance;
+            if luminance < 100.0 && luminance > 0.0 {
+                let luminance_factor = 100.0 / luminance;
 
                color_thief::Color { // color is not bright enough, correct it. As color is not mutable, we return a new color
                    r: (r * luminance_factor).min(255.0) as u8,
@@ -117,12 +120,17 @@ pub fn substitute_placeholders(logo: &str, palette: &[color_thief::Color]) -> St
     let mut result = String::new();
     let mut chars = logo.chars().peekable();
 
+    if let Some(color) = palette.first() {  // This sets palette[0] as the default color from the very beginning,
+                                                    // so lines without any $N placeholder still get colored.
+        result.push_str(&format!("\x1b[38;2;{};{};{}m", color.r, color.g, color.b));
+    }
+
     while let Some(c) = chars.next() {
-        if c!='$' {
+        if c!='$' { // if the current character is not a $, it will not be followed by a digit, so just append it to the string
             result.push(c);
             continue;
         }
-        match chars.peek() {
+        match chars.peek() { // check if the next character is a digit
             Some(&'$') => {
                 result.push('$');
                 chars.next();

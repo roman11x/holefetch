@@ -8,8 +8,23 @@ mod colour;
 
 fn main() {
     let info = SystemInfo::new();
+
     let wallpaper = colour::detect_wallpaper(&info.desktop_environment.name);
-    println!("{:?}", wallpaper);
+    let palette = match wallpaper {
+        Some(ref path) => colour::correct_brightness(&colour::extract_palette(path)),
+        None => vec![] // TODO: if no wallpaper is detected, use the default palette
+    };
+
+   /* for (i, c) in palette.iter().enumerate() {
+        println!("palette[{}]: r={} g={} b={}", i, c.r, c.g, c.b);
+    }
+
+    */
+
+    //println!("wallpaper: {:?}", wallpaper);
+    //println!("palette length: {}", palette.len());
+
+
     let id = SystemInfo::read_os_id();
     let info_lines = info.to_lines();
 
@@ -34,10 +49,10 @@ fn main() {
         let info_line = info_lines.get(i).unwrap_or(&empty);
 
         let stripped = strip_placeholders(logo_line);
-        let visible_len = strip_placeholders(logo_line);
+        let substituted = colour::substitute_placeholders(logo_line, &palette);
         let padding = " ".repeat(logo_width - stripped.chars().count());
 
-        println!("{}{}  {}", stripped, padding, info_line);
+        println!("{}{}  {}", substituted, padding, info_line);
     }
 
 }
