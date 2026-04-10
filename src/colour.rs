@@ -1,9 +1,10 @@
 use std::process::Command;
+use color_thief::ColorFormat;
 use crate::desktop::DesktopEnvironment;
+use image::GenericImageView;
 
 
-
-
+// Detect the wallpaper path of the current desktop environment
 pub fn detect_wallpaper(de: &str) -> Option<String> {
 
     let trim_string_gnome = |schema:&str , key: &str| -> String {
@@ -65,4 +66,17 @@ pub fn detect_wallpaper(de: &str) -> Option<String> {
 
     }
 }
+// Extract the palette of the dominant color of the wallpaper
+pub fn extract_palette(wallpaper: &str) -> Vec<color_thief::Color> {
+    if let Ok(wp) = image::open(wallpaper) {
+       let pixels = wp.to_rgb8().into_raw();
+        if let Ok(result) = color_thief::get_palette(&pixels, color_thief::ColorFormat::Rgb, 5, 4) {
+            return result;
+        }
+    }
+    vec![]
+}
+
+
+
 
