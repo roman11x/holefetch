@@ -76,7 +76,15 @@ pub fn extract_palette(wallpaper: &str) -> Vec<color_thief::Color> {
     }
     vec![]
 }
+/*
+color-thief extracts dominant colors from a wallpaper.
+“Dominant” means most frequently occurring or most visually significant — not “most readable on a terminal.”
+A dark wallpaper like a moonlit scene or a dark anime panel will have dominant colors with very low luminance — dark blues, dark grays, near-blacks.
+If you use those colors for your label text (OS:, CPU:, etc.) on a standard dark terminal background, the text will be nearly invisible.
 
+The luminance check allows us to detect this situation and correct for it before the colors reach the terminal.
+
+ */
 pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Color> {
     palette.into_iter()
         .map(|color| {
@@ -84,7 +92,7 @@ pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Co
             let  g = color.g as f32;
             let  b = color.b as f32;
 
-            let luminance = 0.299 * r  + 0.587 * g  + 0.114 * b ;
+            let luminance = 0.299 * r  + 0.587 * g  + 0.114 * b ; // The result is between 0 (black, no brightness) and 255 (white, full brightness).
 
             if luminance < 60.0 && luminance > 0.0 {
                 let luminance_factor = 60.0 / luminance;
@@ -102,5 +110,39 @@ pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Co
         } )
         .collect()
 }
+// substitute the placeholders in the logo with the dominant colors of the wallpaper
+// the placeholders are in the form ${n} where n is a number between 1 and 9
+// ${1} will be replaced with the dominant index 0 of the dominant color palette and so on
+pub fn substitute_placeholders(logo: &str, palette: &[color_thief::Color]) -> String {
+    let mut result = String::new();
+    let mut chars = logo.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c!='$' {
+            result.push(c);
+            continue;
+        }
+        match chars.peek() {
+            Some(&'$') => {
+                result.push('$');
+                chars.next();
+            },
+            Some(&digit) if digit.is_ascii_digit() => { // if the next character is a digit in the range 1-9
+                    let digit_char = chars.next().unwrap(); //it is guaranteed that the next character exists
+                    let n = digit_char.to_digit(10).unwrap() as usize; // it is guaranteed that the digit is in the range 1-9
+                    if n > 0 && n <= palette.len() {
+                        let color = palette[n-1];
+                        result.push_str(&format!("\x1b[38;2;{};{};{}m", color.r, color.g, color.b));
+                    }
+                }
+            _ => {result.push('$');} // if the next character is not a digit, just append a $ to the string
+            }
+
+        }
+    result.push_str("\x1b[0m"); //append a color reset to the end of the string
+    result
+    }
+
+
 
 
