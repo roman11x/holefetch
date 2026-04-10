@@ -69,7 +69,7 @@ pub fn detect_wallpaper(de: &str) -> Option<String> {
 // Extract the palette of the dominant color of the wallpaper
 pub fn extract_palette(wallpaper: &str) -> Vec<color_thief::Color> {
     if let Ok(wp) = image::open(wallpaper) {
-       let pixels = wp.to_rgb8().into_raw();
+       let pixels = wp.to_rgb8().into_raw(); //convert the image to RGB8 raw pixels
         if let Ok(result) = color_thief::get_palette(&pixels, color_thief::ColorFormat::Rgb, 5, 4) {
             return result;
         }
@@ -77,6 +77,30 @@ pub fn extract_palette(wallpaper: &str) -> Vec<color_thief::Color> {
     vec![]
 }
 
+pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Color> {
+    palette.into_iter()
+        .map(|color| {
+            let  r = color.r as f32;
+            let  g = color.g as f32;
+            let  b = color.b as f32;
 
+            let luminance = 0.299 * r  + 0.587 * g  + 0.114 * b ;
+
+            if luminance < 60.0 && luminance > 0.0 {
+                let luminance_factor = 60.0 / luminance;
+
+               color_thief::Color { // color is not bright enough, correct it. As color is not mutable, we return a new color
+                   r: (r * luminance_factor).min(255.0) as u8,
+                   g: (g * luminance_factor).min (255.0) as u8,
+                   b: (b * luminance_factor).min(255.0) as u8,
+               }
+            }
+            else {
+                *color //return a copy of the original color
+            }
+
+        } )
+        .collect()
+}
 
 
