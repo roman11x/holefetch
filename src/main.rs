@@ -6,29 +6,30 @@ mod desktop;
 
 mod colour;
 
+mod config;
+
 fn main() {
+    let config = config::Config::load();
+
     let info = SystemInfo::new();
 
-    let wallpaper = colour::detect_wallpaper(&info.desktop_environment.name);
-    let palette = match wallpaper {
+    let wallpaper = config.wallpaper_path.clone().or_else(|| colour::detect_wallpaper(&info.desktop_environment.name)); // detect the wallpaper if it's not specified in the config
+
+    let palette = match wallpaper { // extract the palette from the wallpaper and correct the brightness
         Some(ref path) => colour::correct_brightness(&colour::extract_palette(path)),
         None => vec![] // TODO: if no wallpaper is detected, use the default palette
     };
 
-   /* for (i, c) in palette.iter().enumerate() {
-        println!("palette[{}]: r={} g={} b={}", i, c.r, c.g, c.b);
-    }
 
-    */
-
-    //println!("wallpaper: {:?}", wallpaper);
-    //println!("palette length: {}", palette.len());
 
 
     let id = SystemInfo::read_os_id();
+
+    let logo_name = config.logo.as_deref().unwrap_or(&id); // if the logo is not specified in the config, use the OS id
+
     let info_lines = info.to_lines(&palette);
 
-    let logo = get_logo(&id).unwrap_or("unknown");
+    let logo = get_logo(&logo_name).unwrap_or("unknown");
     let logo_lines = logo.lines().collect::<Vec<&str>>();
 
     // temporary closure to strip the placeholder from the logo
