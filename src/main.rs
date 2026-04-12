@@ -35,9 +35,17 @@ fn main() {
 
     let wallpaper = config.wallpaper_path.clone().or_else(|| colour::detect_wallpaper(&info.desktop_environment.name)); // detect the wallpaper if it's not specified in the config
 
+    let brightness = config.brightness.unwrap_or(1.0).clamp(0.0, 2.0); // get the brightness from the config or use the default value
+                                                                                            // clamp the brightness to be between 0.0 and 2.0 
+
     let palette = match wallpaper { // extract the palette from the wallpaper and correct the brightness
-        Some(ref path) => colour::correct_brightness(&colour::extract_palette(path)),
-        None => vec![] // TODO: if no wallpaper is detected, use the default palette
+        Some(ref path) => colour::correct_brightness(&colour::extract_palette(path), brightness),
+        None => vec![
+            color_thief::Color { r: 100, g: 150, b: 255 }, // blue
+            color_thief::Color { r: 200, g: 100, b: 255 }, // purple
+            color_thief::Color { r: 150, g: 200, b: 255 }, // light blue
+            color_thief::Color { r: 180, g: 180, b: 180 }, // grey
+        ]  //  if no wallpaper is detected, use the default palette
     };
 
 

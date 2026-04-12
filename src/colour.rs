@@ -86,9 +86,8 @@ A dark wallpaper like a moonlit scene or a dark anime panel will have dominant c
 If you use those colors for your label text (OS:, CPU:, etc.) on a standard dark terminal background, the text will be nearly invisible.
 
 The luminance check allows us to detect this situation and correct for it before the colors reach the terminal.
-
  */
-pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Color> {
+pub fn correct_brightness(palette: &[color_thief::Color], brightness: f32) -> Vec<color_thief::Color> {
     palette.into_iter()
         .map(|color| {
             let  r = color.r as f32;
@@ -98,7 +97,7 @@ pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Co
             let luminance = 0.299 * r  + 0.587 * g  + 0.114 * b ; // The result is between 0 (black, no brightness) and 255 (white, full brightness).
 
             if luminance < 100.0 && luminance > 0.0 {
-                let luminance_factor = 100.0 / luminance;
+                let luminance_factor = (100.0 / luminance) * brightness;
 
                color_thief::Color { // color is not bright enough, correct it. As color is not mutable, we return a new color
                    r: (r * luminance_factor).min(255.0) as u8,
@@ -107,7 +106,11 @@ pub fn correct_brightness(palette: &[color_thief::Color]) -> Vec<color_thief::Co
                }
             }
             else {
-                *color //return a copy of the original color
+                //return a copy of the original color multiplied by the brightness factor
+                let r = (color.r as f32 * brightness).min(255.0) as u8;
+                let g = (color.g as f32 * brightness).min(255.0) as u8;
+                let b = (color.b as f32 * brightness).min(255.0) as u8;
+                color_thief::Color {r, g, b}
             }
 
         } )
