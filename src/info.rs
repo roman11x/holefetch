@@ -55,8 +55,8 @@ impl SystemInfo {
 
     pub fn to_lines(&self, palette: &[color_thief::Color]) -> Vec<String> {
         let mut lines = Vec::new();
-        lines.push(format!("{}@{}",
-                           colour::colorize_value(&self.user, palette), colour::colorize_value(&self.hostname, palette)));
+        lines.push(format!("{}{}",
+                           colour::colorize_value(&self.user, palette), colour::colorize_value(&format!("@{}", self.hostname), palette)));
         lines.push(colour::colorize_value("-----------", palette));
         lines.push(format!("{} {}",
                            colour::colorize_label("OS:", palette),
