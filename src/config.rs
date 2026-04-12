@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize}; //so we can serialize and deserialize struc
 // Configuration for which modules to display
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ModuleConfig {
-    show: Vec<String>,
+    pub show: Vec<String>,
 }
 // Configuration for the entire program
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -11,7 +11,7 @@ pub struct Config {
    pub logo: Option<String>,
    pub wallpaper_path: Option<String>,
    pub brightness: Option<f32>,
-   pub modules: ModuleConfig,
+   pub modules: Option<ModuleConfig>,
 }
 
 impl Config {

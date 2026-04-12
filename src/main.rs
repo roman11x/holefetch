@@ -27,7 +27,7 @@ fn main() {
 
     let logo_name = config.logo.as_deref().unwrap_or(&id); // if the logo is not specified in the config, use the OS id
 
-    let info_lines = info.to_lines(&palette);
+    let info_lines = info.to_lines(&palette, &config);
 
     let logo = get_logo(&logo_name).unwrap_or("unknown");
     let logo_lines = logo.lines().collect::<Vec<&str>>();

@@ -3,8 +3,8 @@ use std::io::BufRead;
 use std::process::Command;
 use sysinfo::Disks;
 use crate::desktop::DesktopEnvironment;
-use crate::colour;
-use crate::colour::colorize_value;
+use crate::{colour, config};
+
 
 // Group all the relevant fields of the system into a struct
 #[derive(Debug)]
@@ -53,57 +53,83 @@ impl SystemInfo {
     }
     
 
-    pub fn to_lines(&self, palette: &[color_thief::Color]) -> Vec<String> {
+    pub fn to_lines(&self, palette: &[color_thief::Color], config: &config::Config ) -> Vec<String> {
+
+        let default_modules = vec![
+            "os", "host", "kernel", "uptime", "cpu", "memory",
+            "swap", "shell", "de", "disk", "gpu", "terminal",
+            "battery", "locale", "packages", "ip"
+        ];
+
         let mut lines = Vec::new();
         lines.push(format!("{}{}",
                            colour::colorize_value(&self.user, palette), colour::colorize_value(&format!("@{}", self.hostname), palette)));
         lines.push(colour::colorize_value("-----------", palette));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("OS:", palette),
-                           colour::colorize_value(&self.os, palette)));
-        lines.push(format!("{} {}",
-                            colour::colorize_label("Host:", palette),
-                            colour::colorize_value(self.host.as_str(), palette)));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Kernel:", palette),
-                           colour::colorize_value(&self.kernel, palette)));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Uptime:", palette),
-                           colour::colorize_value(&self.uptime, palette)));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("CPU", palette),
-                           colour::colorize_value(&self.cpu, palette)));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Memory:", palette),
-                           colorize_value(&self.memory,palette)));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Swap:", palette),
-                           colorize_value(&self.swap, palette)));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Shell:", palette)
-                           ,colour::colorize_value(&self.shell, palette)));
-        lines.extend(self.desktop_environment.to_lines(palette));
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Disk:", palette) ,
-                           colour::colorize_value(&self.disk,palette))); //Disk:
-        lines.push(format!("{} {}",
-                            colour::colorize_label("GPU:", palette)
-                           ,colour::colorize_value(&self.gpu, palette))); //GPU:
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Terminal:", palette) ,
-                           colour::colorize_value(&self.terminal,palette))); //Terminal:
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Battery:", palette),
-                           colour::colorize_value(&self.battery,palette))); //Battery:
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Locale:", palette)  ,
-                           colour::colorize_value(&self.locale,palette))); //Locale:
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Packages:" , palette),
-                           colour::colorize_value(&self.packages,palette) )); //Packages:
-        lines.push(format!("{} {}",
-                           colour::colorize_label("Local IP:", palette) ,
-                           colour::colorize_value(&self.ip,palette))); //Local IP:
+
+        let modules: Vec<&str> = match &config.modules {
+            Some(m) => m.show.iter().map(|s| s.as_str()).collect(),
+            None => default_modules,
+        };
+
+        for module in modules { // iterate over the modules to be displayed
+            match module {
+                "os" => lines.push(format!("{} {}",
+                                           colour::colorize_label("OS:", palette),
+                                           colour::colorize_value(&self.os, palette))),
+                "host" => lines.push(format!("{} {}",
+                                             colour::colorize_label("Host:", palette),
+                                             colour::colorize_value(self.host.as_str(), palette))),
+                "kernel" => lines.push(format!("{} {}",
+                                               colour::colorize_label("Kernel:", palette),
+                                               colour::colorize_value(&self.kernel, palette))),
+                "uptime" => lines.push(format!("{} {}",
+                                               colour::colorize_label("Uptime:", palette),
+                                               colour::colorize_value(&self.uptime, palette))),
+                "cpu" => lines.push(format!("{} {}",
+                                            colour::colorize_label("CPU", palette),
+                                            colour::colorize_value(&self.cpu, palette))),
+                "memory" => lines.push(format!("{} {}",
+                                               colour::colorize_label("Memory:", palette),
+                                               colour::colorize_value(&self.memory,palette))),
+                "swap" => lines.push(format!("{} {}",
+                                             colour::colorize_label("Swap:", palette),
+                                             colour::colorize_value(&self.swap, palette))),
+                "shell" => lines.push(format!("{} {}",
+                                              colour::colorize_label("Shell:", palette)
+                                              ,colour::colorize_value(&self.shell, palette))),
+
+                "de" => lines.extend(self.desktop_environment.to_lines(palette)),
+
+                "disk" => lines.push(format!("{} {}",
+                                             colour::colorize_label("Disk:", palette) ,
+                                             colour::colorize_value(&self.disk,palette))),
+
+
+                "gpu" => lines.push(format!("{} {}",
+                                            colour::colorize_label("GPU:", palette)
+                                            ,colour::colorize_value(&self.gpu, palette))), //GPU:
+                "terminal" => lines.push(format!("{} {}",
+                                                 colour::colorize_label("Terminal:", palette) ,
+                                                 colour::colorize_value(&self.terminal,palette))), //Terminal:
+
+
+                "battery" => lines.push(format!("{} {}",
+                                                colour::colorize_label("Battery:", palette),
+                                                colour::colorize_value(&self.battery,palette))), //Battery:
+
+                "locale" => lines.push(format!("{} {}",
+                                               colour::colorize_label("Locale:", palette)  ,
+                                               colour::colorize_value(&self.locale,palette))), //Locale:
+                "packages" => lines.push(format!("{} {}",
+                                                 colour::colorize_label("Packages:" , palette),
+                                                 colour::colorize_value(&self.packages,palette) )), //Packages:
+                "ip" => lines.push(format!("{} {}",
+                                           colour::colorize_label("Local IP:", palette) ,
+                                           colour::colorize_value(&self.ip,palette))), //Local IP:
+
+                _ => {}
+            }
+        }
         lines
     }
 
