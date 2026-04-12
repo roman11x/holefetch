@@ -93,13 +93,13 @@ impl DesktopEnvironment {
 
     pub fn to_lines(&self, palette: &[color_thief::Color]) -> Vec<String> {
         vec![
-            format!("{} {} ({})",
+            format!("{} {} {}",
                     colorize_label("DE:", palette),
                     colour::colorize_value(&self.name,palette),
-                    colour::colorize_value(&self.display_server,palette)),
-            format!("{} {} ({})",
+                    colour::colorize_value(&format!("({})", self.display_server),palette)),
+            format!("{} {} {}",
                     colour::colorize_label("WM:", palette),
-                    colour::colorize_value(&self.wm,palette), colour::colorize_value(&self.display_server,palette)),
+                    colour::colorize_value(&self.wm,palette), colour::colorize_value(&format!("({})", self.display_server),palette)),
             format!("{} {}", colour::colorize_label("WM Theme:", palette) ,
                     colour::colorize_value(&self.wm_theme, palette)), //WM Theme:
             format!("{} {}",
@@ -108,10 +108,10 @@ impl DesktopEnvironment {
             format!("{} {}", 
                     colour::colorize_label("Icons:", palette) ,
                     colour::colorize_value(&self.icon_theme,palette)), //Icons:
-            format!("{} {} ({}px)", 
+            format!("{} {} {}",
                     colour::colorize_label("Cursor Theme:", palette) ,
                     colour::colorize_value(&self.cursor_theme, palette),
-                    colour::colorize_value(&self.cursor_size,palette)), //Cursor Theme:
+                    colour::colorize_value(&format!("({}px)", self.cursor_size),palette)), //Cursor Theme:
             format!("{} {}", 
                     colorize_label("Font:", palette) ,
                     colorize_value(&self.font, palette)), //Font:
