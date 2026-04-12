@@ -1,4 +1,6 @@
 use std::process::Command;
+use crate::colour;
+use crate::colour::{colorize_label, colorize_value};
 
 // Group all the relevant fields of the DE into a struct
 #[derive(Debug)]
@@ -89,15 +91,30 @@ impl DesktopEnvironment {
 
     }
 
-    pub fn to_lines(&self) -> Vec<String> {
+    pub fn to_lines(&self, palette: &[color_thief::Color]) -> Vec<String> {
         vec![
-            format!("DE: {} ({})", self.name, self.display_server),
-            format!("WM: {} ({})", self.wm, self.display_server),
-            format!("WM Theme: {}", self.wm_theme),
-            format!("Theme: {}", self.theme),
-            format!("Icons: {}", self.icon_theme),
-            format!("Cursor Theme: {} ({}px)", self.cursor_theme, self.cursor_size),
-            format!("Font: {}", self.font),
+            format!("{} {} ({})",
+                    colorize_label("DE:", palette),
+                    colour::colorize_value(&self.name,palette),
+                    colour::colorize_value(&self.display_server,palette)),
+            format!("{} {} ({})",
+                    colour::colorize_label("WM:", palette),
+                    colour::colorize_value(&self.wm,palette), colour::colorize_value(&self.display_server,palette)),
+            format!("{} {}", colour::colorize_label("WM Theme:", palette) ,
+                    colour::colorize_value(&self.wm_theme, palette)), //WM Theme:
+            format!("{} {}",
+                    colour::colorize_label("Theme:", palette),
+                    colour::colorize_value(&self.theme, palette)), //Theme:
+            format!("{} {}", 
+                    colour::colorize_label("Icons:", palette) ,
+                    colour::colorize_value(&self.icon_theme,palette)), //Icons:
+            format!("{} {} ({}px)", 
+                    colour::colorize_label("Cursor Theme:", palette) ,
+                    colour::colorize_value(&self.cursor_theme, palette),
+                    colour::colorize_value(&self.cursor_size,palette)), //Cursor Theme:
+            format!("{} {}", 
+                    colorize_label("Font:", palette) ,
+                    colorize_value(&self.font, palette)), //Font:
         ]
     }
 

@@ -1,7 +1,7 @@
 use std::process::Command;
 use crate::desktop::DesktopEnvironment;
 use image::ImageReader;
-
+use colored::Colorize;
 
 // Detect the wallpaper path of the current desktop environment
 pub fn detect_wallpaper(de: &str) -> Option<String> {
@@ -150,6 +150,33 @@ pub fn substitute_placeholders(logo: &str, palette: &[color_thief::Color]) -> St
     result.push_str("\x1b[0m"); //append a color reset to the end of the string
     result
     }
+
+pub fn colorize_label(label: &str, palette: &[color_thief::Color]) -> String {
+    if palette.len() >= 3 {
+        let color = palette[2];
+        let r = color.r;
+        let g = color.g;
+        let b = color.b;
+        let padded = format!("{:<15}", label); // pad the label
+        let text = padded.truecolor(r,g,b).to_string();
+        return text
+    }
+    label.to_string()
+}
+
+pub fn colorize_value(value: &str, palette: &[color_thief::Color]) -> String {
+    if palette.len() >= 4 {
+        let color = palette[3];
+        let r = color.r;
+        let g = color.g;
+        let b = color.b;
+        let text = value.truecolor(r,g,b).to_string();
+        return text
+    }
+    value.to_string()
+}
+
+
 
 
 

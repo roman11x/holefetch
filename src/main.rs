@@ -26,7 +26,7 @@ fn main() {
 
 
     let id = SystemInfo::read_os_id();
-    let info_lines = info.to_lines();
+    let info_lines = info.to_lines(&palette);
 
     let logo = get_logo(&id).unwrap_or("unknown");
     let logo_lines = logo.lines().collect::<Vec<&str>>();
