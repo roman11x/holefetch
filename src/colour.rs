@@ -153,10 +153,11 @@ pub fn substitute_placeholders(logo: &str, palette: &[color_thief::Color]) -> St
     result.push_str("\x1b[0m"); //append a color reset to the end of the string
     result
     }
+// use the brightest color of the palette to colorize the label and the second-brightest color to colorize the value
 
 pub fn colorize_label(label: &str, palette: &[color_thief::Color]) -> String {
     if palette.len() >= 3 {
-        let color = palette[2];
+        let color = palette[0]; // if no brightest color is found, use a default color
         let r = color.r;
         let g = color.g;
         let b = color.b;
@@ -169,7 +170,7 @@ pub fn colorize_label(label: &str, palette: &[color_thief::Color]) -> String {
 
 pub fn colorize_value(value: &str, palette: &[color_thief::Color]) -> String {
     if palette.len() >= 4 {
-        let color = palette[3];
+        let color = palette[1];
         let r = color.r;
         let g = color.g;
         let b = color.b;
@@ -178,6 +179,11 @@ pub fn colorize_value(value: &str, palette: &[color_thief::Color]) -> String {
     }
     value.to_string()
 }
+
+
+
+
+
 
 
 

@@ -12,6 +12,8 @@ mod config;
 mod cli;
 
 fn main() {
+    //colored::control::set_override(true);
+
     let args = cli::Args::parse(); // parse the command line arguments
     if args.list_logos { // if the list-logos flag is set, list all available logos
         for name in list_logos() {
@@ -92,6 +94,10 @@ fn main() {
 
     let max_lines = logo_lines.len().max(info_lines.len()); // find the greater of the two lengths for the width of the logo output
     let empty = String::new();
+
+    let test_label = colour::colorize_label("TEST:", &palette);
+    eprintln!("label bytes: {:?}", test_label.as_bytes());
+
     for i in 0..max_lines {
         let logo_line = logo_lines.get(i).unwrap_or(&"");
         let info_line = info_lines.get(i).unwrap_or(&empty);
