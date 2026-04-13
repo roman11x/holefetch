@@ -2,6 +2,12 @@
 name = "holefetch"
 version = "0.1.0"
 edition = "2024"
+description = "A Linux system fetch tool that automatically themes itself from your wallpaper"
+license = "MIT"
+repository = "https://github.com/roman11x/holefetch"
+readme = "README.md"
+keywords = ["fetch", "linux", "wallpaper", "terminal", "cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
