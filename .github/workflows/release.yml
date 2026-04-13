@@ -1,0 +1,42 @@
+name: Release
+
+# Trigger: only when you push a tag starting with 'v'
+# e.g. git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out  repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Rust
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Step 3: Install OpenSSL development headers
+      # (required by reqwest in build.rs)
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+
+      # Step 4: Build the release binary
+      - name: Build
+        run: cargo build --release
+
+      # Step 5: Rename the binary to include the platform name
+      - name: Rename binary
+        run: mv target/release/holefetch holefetch-linux-x86_64
+
+      # Step 6: Create a GitHub Release and upload the binary
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: holefetch-linux-x86_64
+          generate_release_notes: true
