@@ -95,7 +95,7 @@ fn main() {
     let max_lines = logo_lines.len().max(info_lines.len()); // find the greater of the two lengths for the width of the logo output
     let empty = String::new();
 
-    let test_label = colour::colorize_label("TEST:", &palette);
+
 
 
     for i in 0..max_lines {
