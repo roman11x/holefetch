@@ -156,7 +156,7 @@ pub fn substitute_placeholders(logo: &str, palette: &[color_thief::Color]) -> St
 // use the brightest color of the palette to colorize the label and the second-brightest color to colorize the value
 
 pub fn colorize_label(label: &str, palette: &[color_thief::Color]) -> String {
-    if palette.len() >= 3 {
+    if palette.len() >= 3 { 
         let color = palette[0]; // if no brightest color is found, use a default color
         let r = color.r;
         let g = color.g;

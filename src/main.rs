@@ -96,7 +96,7 @@ fn main() {
     let empty = String::new();
 
     let test_label = colour::colorize_label("TEST:", &palette);
-    eprintln!("label bytes: {:?}", test_label.as_bytes());
+
 
     for i in 0..max_lines {
         let logo_line = logo_lines.get(i).unwrap_or(&"");
