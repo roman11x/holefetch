@@ -81,7 +81,7 @@ fn main() {
     let logo = get_logo(&logo_name).unwrap_or("unknown");
     let logo_lines = logo.lines().collect::<Vec<&str>>();
 
-    // temporary closure to strip the placeholder from the logo
+    // closure to strip the placeholders from the logo
     let strip_placeholders = |s: &str| -> String {
         let mut result = s.to_string();
         for i in 1..=9 {

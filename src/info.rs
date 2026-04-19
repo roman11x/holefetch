@@ -30,25 +30,61 @@ use crate::{colour, config};
 }
 impl SystemInfo {
    pub fn new() -> SystemInfo {
+        // light IO no need for threading
+       let user = Self::read_user();
+       let hostname = Self::read_hostname();
+       let os = Self::read_os();
+       let kernel = Self::read_kernel();
+       let uptime = Self::read_uptime();
+       let cpu = Self::read_cpu();
+       let memory = Self::read_memory();
+       let shell = Self::read_shell();
+       let locale = Self::read_locale();
+       let swap = Self::read_swap();
+       let host = Self::read_host();
+
+        // heavy IO needs for threading, parallelize the reading of the disk, gpu, terminal, packages, battery, and ip
+        // as the fields are related to the same resource, we use a scope to create a life-time-bounded region
+       let (de, disk, gpu, terminal, packages, battery, ip) =
+       std::thread::scope(|s| {
+           let de = s.spawn(|| DesktopEnvironment::new());
+           let disk         = s.spawn(|| Self::read_disk());
+           let gpu          = s.spawn(|| Self::read_gpu());
+           let terminal     = s.spawn(|| Self::read_terminal());
+           let packages     = s.spawn(|| Self::read_packages());
+           let battery      = s.spawn(|| Self::read_battery());
+           let ip           = s.spawn(|| Self::read_ip());
+
+              (
+               de.join().unwrap(),
+               disk.join().unwrap(),
+               gpu.join().unwrap(),
+               terminal.join().unwrap(),
+               packages.join().unwrap(),
+               battery.join().unwrap(),
+               ip.join().unwrap(),
+               )
+
+       });
         SystemInfo {
-            user: Self::read_user(),
-            hostname: Self::read_hostname(),
-            os: Self::read_os(),
-            kernel: Self::read_kernel(),
-            uptime: Self::read_uptime(),
-            cpu: Self::read_cpu(),
-            memory: Self::read_memory(),
-            shell: Self::read_shell(),
-            desktop_environment: DesktopEnvironment::new(),
-            disk: Self::read_disk(),
-            gpu: Self::read_gpu(),
-            terminal: Self::read_terminal(),
-            locale: Self::read_locale(),
-            packages: Self::read_packages(),
-            host: Self::read_host(),
-            swap: Self::read_swap(),
-            battery: Self::read_battery(),
-            ip: Self::read_ip(),
+            user,
+            hostname,
+            os,
+            kernel,
+            uptime,
+            cpu,
+            memory,
+            shell,
+            desktop_environment: de,
+            disk,
+            gpu,
+            terminal,
+            locale,
+            packages,
+            host,
+            swap,
+            battery,
+            ip,
         }
     }
     
